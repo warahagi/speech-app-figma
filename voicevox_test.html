@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VOICEVOX テスト</title>
+    <link rel="icon" href="data:,">
+</head>
+<body>
+    <h1>VOICEVOX 連携テスト</h1>
+    <input type="text" id="text" value="こんにちは、ずんだもんだのだ！">
+    <button id="speakBtn">しゃべる</button>
+
+    <script>
+      document.getElementById('speakBtn').addEventListener('click', async () => {
+        const text = document.getElementById('text').value;
+        const speakerId = 3;  // 3 は「ずんだもん」
+
+        try {
+            // 1. 音声合成用のクエリを作成
+            const queryRes = await fetch(`http://127.0.0.1:50021/audio_query?text=${encodeURIComponent(text)}&speaker=${speakerId}`,{
+              method: 'POST'
+            });
+            const queryData = await queryRes.json();
+
+            // 2. 音声データを生成
+            const synthRes = await fetch(`http://127.0.0.1:50021/synthesis?speaker=${speakerId}`,{
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(queryData)
+            });
+
+            // 3. 音声を再生
+            const audioBlob = await synthRes.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+            audio.play();
+
+        }catch (error) {
+            alert('通信に失敗しました。VOICEVOXが起動しているか確認してください。');
+            console.error(error);
+        }
+      });
+
+
+    </script>
+</body>
+</html>

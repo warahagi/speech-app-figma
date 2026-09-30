@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音声読み上げミニアプリ</title>
+
+    <link rel="icon" href="data:,">
+
+  
+
+    <!-- 👇ここから追加します-->
+     <style>
+        /* 全体の背景と文字色 */
+        :root {
+            --background-color: #f4f4f4;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #0000d6;
+            --slider-bg: linear-gradient(to right, #2b00ff, #ff0000);
+            --badge-bg: #4a54ee;
+            --badge-red: #e60000;
+        }
+ 
+        /* ダークモード時の色設定 */
+        body.dark-mode {
+            --bg-color: #121212;
+            --card-bg: #000000;
+            --text-color: #ffffff;
+            --border-color: #2b00ff;
+        }
+
+        /* 画面全体を中央寄せにする */
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: "Segoe UI Emoji", "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* アプリの外枠カード */
+        .container {
+            position:relative;
+          background-color: var(--card-bg);
+          border: 3px solid #000;
+          border-radius: 12px;
+          padding: 24px;
+          width: 600px;
+          max-width: 90%;
+          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+          position: relative;
+        }
+
+        /* タイトルのスタイル */
+        h1 {
+            color: #ff0000;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        /* ダークモードボタン */
+        #darkToggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #000;
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        body.dark-mode #darkToggle {
+            background: #fff;
+            color: #000;
+        }
+        /* ダークモード時の読み上げ表示エリアの文字色調整 */
+        body.dark-mode #textInput {
+            color: #333333 !important; /* 背景が白～薄い色でもはっきり見える暗い文字色 */
+        }
+
+        
+        body.dark-mode #highlightArea {
+            color: #b1e7ec !important; /* 背景が濃い色でもはっきり見える明るい文字色 */
+        }
+        
+        body.dark-mode textarea#textInput::placeholder {
+            color: #888888 !important;
+        }
+
+        /* ダークモード時の文字数・予想時間表示欄の文字色を明るくする */
+        body.dark-mode #timeEstimate {
+            color: #cccccc !important; /* 明るいグレー（または #ffffff で純白）にする */
+        }
+        
+        /* 親枠のスタイル */
+        .textarea-container {
+            position: relative;
+            width: 100;
+        }
+
+        /* テキスト入力エリア */
+        #textInput, #highlightArea {
+            width: 100%;
+            height: 180px;
+            padding: 12px;
+            font-size: 16px;
+            line-height: 1.6;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+            background-color: #ffffff;
+        }
+
+        /* ハイライトエリア専用の設定 */
+        #highlightArea {
+            overflow-y: auto;        /* 縦スクロールを有効に */
+            word-break: break-all;   /* 長い文章の折り返し */
+            white-space: pre-wrap;   /* 改行を反映させる */
+        }
+
+        /* 非表示にするためのクラス */
+        .hidden {
+            display: none !important;
+        }
+
+
+       /* 現在読み上げ中の文章スタイル */
+       .highlight-text {
+       background-color: #ffeb3b; /* 鮮やかな黄色 */
+       color: #000;
+       font-weight: bold;
+       padding: 2px 4px;
+       border-radius: 4px;
+       }
+
+        /* ボタンを横並びにするエリア */
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        /* 緑色の「しゃべる」「だまる」「クリア」ボタン */
+        .btn-group button {
+            flex: 1;
+            padding: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #004d1a;
+            background-color: #00ff66;
+        }
+
+        /* label-badge がボタンになっても見た目を維持する設定 */
+        button.label-badge {
+           border: none;
+           cursor: pointer;
+        }
+
+        /* スライダーの行スタイル */
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        /* スライダーの左右の四角いラベル */
+        .label-badge {
+            width: 60px;
+            padding: 6px;
+            text-align: center;
+            color: #fff;
+            font-weight: bold;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .badge-blue { background-color: var(--badge-bg);}
+        .badge-red { background-color: var(--badge-red);}
+
+        .slider-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+
+        /* 赤青グラデーションのバー */
+        input[type="range"] {
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 12px;
+      border-radius: 6px;
+      background: var(--slider-bg);
+      outline: none;
+    }
+        /* スライダーのつまみ（緑の丸） */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #00ff66;
+            cursor: pointer;
+            border: 2px solid #fff;
+        }
+ </style>
+</head>
+<body>
+<!-- ここから画面に表示されるパーツ -->
+ <div class="container">
+    <button id="darkToggle">ダークモード<br>OFF</button>
+
+    <h1>★音声読み上げミニアプリ★</h1>
+
+    <!-- 1つにまとめたエリアの枠 -->
+    <div class="textarea-container">
+
+    <!-- 入力用テキストエリア（通常表示） -->
+    <textarea id="textInput" placeholder="ここに読み上げた文章を入力してください..."></textarea>
+
+    <!-- 再生用ハイライトエリア（最初は隠しておく） -->
+     <div id="highlightArea" class="hidden">
+        ここに読み上げ中のハイライトが表示されます
+     </div>
+
+     </div>
+    
+    <!-- 💡　ここを追加！　時間と文字数の表示欄 -->
+     <div id="timeEstimate" style="margin: 10px 0; font-size: 0.95rem; color: #666;">
+        文字数: <span id="charCount">0</span> 文字 ／ 予想時間: 約 <span id="speakingTime">0</span> 秒
+     </div>
+
+    <!-- 操作ボタン -->
+    <div class="btn-group">
+        <button id="speakBtn">しゃべる</button>
+        <button id="pauseBtn">一時だまる</button>
+        <button id="stopBtn">だまる</button>
+        <button id="clearBtn">クリア</button>
+    </div>
+
+    <!-- 設定スライダー -->
+     <div class="control-row">
+        <div class="label-badge badge-blue">０</div>
+        <div class="slider-wrapper">
+            <input type="range" id="volume" min="0" max="1" step="0.1" value="1">
+        </div>
+        <div class="label-badge badge-red">１００</div>
+     </div>
+
+     <!-- VOICEVOX 話者選択 -->
+      <div style="margin: 10px 0;">
+        <label for="speakerInput" style="font-weight: bold;">VOICEVOX キャラクター：</label>
+        <select id="speakerInput" style="padding: 5px; font-size: 16px; width: 100%; max-width: 300px;">
+            <option value="3">ずんだもん（ノーマル）</option>
+            <option value="1">ずんだもん（あまあま）</option>
+            <option value="7">ずんだもん（ツンツン）</option>
+            <option value="2">四国めたん（ノーマル）</option>
+            <option value="8">春日部つむぎ（ノーマル）</option>
+            <option value="10">波音リツ（ノーマル）</option>
+            <option value="11">玄野武宏（ノーマル）</option>  <!-- 男性の声 -->
+        </select>
+      </div>
+
+      <!-- ↓ ここから追加 ↓ -->
+      <div class="control-row" style="margin: 15px 0; gap: 8px; justify-content: center;">
+      <button id="btnFav1">★ お気に入り1</button>
+       <button id="btnFav2">★ お気に入り2</button>
+       <button id="btnSaveFav" style="background-color: #ff9800; color: white;">💾 今の設定を保存</button>
+       <button id="btnDowload" style="background-color: #2196F3; color: white; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer;">
+            🎵 音声をダウンロード
+       </button>
+      </div>
+      
+       <div class="control-row">
+        <div class="label-badge badge-blue">棒読み</div>
+        <div class="slider-wrapper">
+            <input type="range" id="intonationSelect" min="0" max="2" step="0.1" value="1">
+        </div>
+        <div class="label-badge badge-red">感情豊か</div>
+       </div>
+
+     <div class="control-row">
+        <div class="label-badge badge-blue">低音</div>
+        <div class="slider-wrapper">
+            <input type="range" id="pitch" min="0.5" max="1.5" step="0.1" value="1">
+        </div>
+        <div class="label-badge badge-red">高音</div>
+     </div>
+
+     <div class="control-row">
+        <div class="label-badge badge-blue">遅い</div>
+        <div class="slider-wrapper">
+            <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1">
+        </div>
+        <div class="label-badge badge-red">早い</div>
+     </div>
+ </div>
+
+ <script>
+
+    // エレメント取得
+    const textInput = document.getElementById('textInput');
+    const speakBtn = document.getElementById('speakBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const volumeInput = document.getElementById('volume');
+    const pitchInput = document.getElementById('pitch');
+    const rateInput = document.getElementById('rate');
+    const speakerInput = document.getElementById('speakerInput');
+    const darkToggle = document.getElementById('darkToggle');
+
+    // 💡 ここに追加！
+    const charCount = document.getElementById('charCount');
+    const speakingTime = document.getElementById('speakingTime');
+
+    // 文字数と予想時間を更新する関数
+    function updateEstimate() {
+        const text = textInput.value;
+        const length = text.length; // 文字数
+
+        // 速度スライダーの値を取得（標準は 1）
+        const rate = parseFloat(rateInput.value) || 1;
+
+        // 一般的な読み上げ速度（1秒あたり約6文字）÷ 速度倍率
+        const baseSpeed = 6;
+        const totalSeconds = Math.ceil(length / (baseSpeed * rate));
+
+        // 画面に反映
+        charCount.textContent = length;
+        speakingTime.textContent = totalSeconds;
+    }
+
+    // 入力したとき＆速度を変えたときに自動計算するイベントを設定
+    textInput.addEventListener('input', updateEstimate);
+    rateInput.addEventListener('input', updateEstimate);
+
+    
+    // VOICEVOX 音声再生用のオーディオオブジェクトとタイマーとダウンロード用変数
+    let currentAudio = null;
+    let highlightTimer = null; //　★タイマー管理用変数を追加
+    let currentAudioBlob = null; // ★ これを追加！生成された音声ファイルを保持します
+
+
+    if (speakBtn){
+        speakBtn.addEventListener('click', async () => {
+            const textInput = document.getElementById('textInput');
+            const text = textInput ? textInput.value : '';
+            const speakerSelect = document.getElementById('speakerInput');
+            const speakerId = speakerSelect ? speakerSelect.value : '3';
+
+            if (!text) {
+                alert('読み上げテキストを入力してください。');
+                return;
+            }
+
+            showHighlightArea(true); // ★　ここに追加！（テキストがあったら表示を切り替え）
+
+            
+
+            try {
+                // 1. クエリ作成（VOICEVOXにテキストと話者IDを送る）
+                const quiryRes = await fetch(`http://localhost:50021/audio_query?text=${encodeURIComponent(text)}&speaker=${speakerId}`, {
+                    method: 'POST'
+                });
+                if (!quiryRes.ok) throw new Error('クエリ作成に失敗しました');
+                const queryData = await quiryRes.json();
+
+                // ★　スライダーの値を VOICEVOX のクエリに反映
+                const speedInput = document.getElementById('rate');
+                const pitchInput = document.getElementById('pitch');
+                const intonationInput = document.getElementById('intonationSelect');
+
+                if (speedInput) queryData.speedScale = parseFloat(speedInput.value);
+                if (pitchInput) queryData.pitchSclae = parseFloat(pitchInput.value);
+                if (intonationInput) queryData.intonationSclas = parseFloat(intonationInput.value);
+           
+                // 2. 音声合成（作成したクエリをもとに音声データ（WAV））を取得）
+                const synthRes = await fetch(`http://localhost:50021/synthesis?speaker=${speakerId}`,{
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(queryData)
+                });
+                if (!synthRes.ok) throw new Error('音声合成に失敗しました');
+
+                // 3. 音声データを再生準備
+                const audioBlob = await synthRes.blob();
+                currentAudioBlob = audioBlob; // ★ここを追加！生成されたBlobをダウロード用に保存
+                
+
+                // 前の再生・タイマーを停止
+                if (currentAudio) currentAudio.pause();
+                if (highlightTimer) clearInterval(highlightTimer);
+
+                // ★ audioUrl を作成してから Audio オブジェクトを生成
+                const audioUrl = URL.createObjectURL(audioBlob);
+                currentAudio = new Audio(audioUrl);
+                
+                const highlightArea = document.getElementById('highlightArea');
+
+                // ★　音声の長さが読み込まれたら順次ハイライトを開始
+                currentAudio.onloadedmetadata = () => {
+                    const totalDuration = currentAudio.duration;
+                    const characters = text.split('');
+                    const timePerChar = totalDuration / characters.length;
+
+                     // スライダーを動かしたときにリアルタイムで音量を変更
+                    const volInput = document.getElementById('volume');
+                    if (volInput) {
+                    currentAudio.volume = parseFloat(volInput.value);
+                    } 
+                    
+                    /* ★　VOICEVOX クエリに音量を反映する（HTMLの 0~1 の値をそのまま音量にセットする）
+                    const volumeInput = document.getElementById('volum');
+                    if (volumeInput && currentAudio) {currentAudio.volume = parseFloat(volumeInput.value);
+                    } */ 
+                    currentAudio.play();
+
+                    highlightTimer = setInterval(() => {
+                        if (!currentAudio || currentAudio.paused) return;
+
+                        const currentTime = currentAudio.currentTime;
+                        const currentIndex = Math.floor(currentTime / timePerChar);
+
+                        const readText = characters.slice(0, currentIndex).join('');
+                        const unreadText = characters.slice(currentIndex).join('');
+
+                        if (highlightArea) {
+                            highlightArea.innerHTML = `<mark style="background-color: #ffe082; padding: 0 2px;">${readText}</mark>${unreadText}`;
+                            
+                            // ★ ここを追加！黄色のハイライト要素を取得して枠内に自動スクロールする
+                            const mark = highlightArea.querySelector('mark');
+                            if (mark) {
+                                mark.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                            }
+                        }
+                    }, 50);
+                };
+                
+
+                // ★　読み上げ完了時の処理
+                currentAudio.onended = () => {
+                    if (highlightTimer) clearInterval(highlightTimer);
+                    if (highlightArea) {
+                        highlightArea.innerHTML = text; //　全体表示に戻す
+                    }
+                    const pauseBtn = document.getElementById('pauseBtn');
+                    if (pauseBtn) pauseBtn.textContent = '一時だまる';
+
+                    showHighlightArea(false); // ★　ここに追加！読み上げ終了で入力エリアに戻す
+                };
+
+                
+
+            } catch (error) {
+                console.error(error);
+                alert('VOICEVOXとの通信に失敗しました。VOICEVOXアプリが起動しているか確認してください。');
+            }
+        });
+    } 
+
+   
+    
+    
+    // 一時だまる / 再開の切り替え処理
+    pauseBtn.addEventListener('click', () => {
+        // ボタンの文字が「再開」かどうかで判定する
+        const isResuming = (pauseBtn.textContent === '再開');
+
+        if (isResuming) {
+            if (currentAudio) currentAudio.play(); // VOICEVOX音声を再開
+            pauseBtn.textContent = '一時だまる';
+        } else {
+            if (currentAudio) currentAudio.pause(); // VOICEVOX音声を一時停止
+            pauseBtn.textContent = '再開';
+        }
+    });
+
+   // 「だまる（停止）」ボタンの処理
+   if (stopBtn) {
+    stopBtn.addEventListener('click', () => {
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.currentTime = 0;  // 先頭に戻す
+        }
+        if (pauseBtn) pauseBtn.textContent = '一時だまる';
+        if (highlightTimer) {
+            clearInterval(highlightTimer);
+        }
+
+        showHighlightArea(false); // ★　ここに追加！途中で止めた時も入力エリアに戻す
+
+    });
+   }
+    // 「クリア」ボダンの処理
+    if (clearBtn) {
+        clearBtn.addEventListener('click' , () => {
+            // 1. 音声を止める
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
+            if (pauseBtn) pauseBtn.textContent = '一時だまる';
+
+            // 2. テキスト入力エリアとハイライト表示をクリア
+            const textInput = document.getElementById('textInput');
+            const highlightArea = document.getElementById('highlightArea');
+            if (textInput) textInput.value = '';
+            if (highlightArea) highlightArea.textContent = 'ここに読み上げ中のハイライトが表示されます';
+        });
+    }
+
+    // お気に入り機能（VOICEVOX用修正版）
+    let activeFavSlot = 1;
+
+    const btnFav1 = document.getElementById('btnFav1');
+    if (btnFav1) {
+        btnFav1.addEventListener('click', () => {
+           activeFavSlot = 1; // 1を選んだと記憶
+           const savedData = localStorage.getItem('myVoicePreset1');
+           if (!savedData) {
+            alert('「お気に入り1」はまだ保存されていません。');
+            return;
+           }
+           const favData = JSON.parse(savedData);
+
+           // ★ voiceInput を speakerInput に修正
+           const speakerInput =document.getElementById('speakerInput');
+
+           if (speakerInput && favData.speaker) speakerInput.value = favData.speaker;
+           if (pitchInput && favData.pitch) { pitchInput.value = favData.pitch; pitchInput.dispatchEvent(new Event('input')); }
+           if (rateInput && favData.rate) { rateInput.value = favData.rate; rateInput.dispatchEvent(new Event('input')); }
+           if (volumeInput && favData.volume) { volumeInput.value = favData.volume; volumeInput.dispatchEvent(new Event('input')); }
+        
+           alert('「お気に入り1」を呼び出しました!');
+    });
+}
+
+// 2. 「お気に入り2」ボタンを押したとき
+const btnFav2 = document.getElementById('btnFav2');
+if (btnFav2) {
+    btnFav2.addEventListener('click', () => {
+        activeFavSlot = 2; // 2を選んだと記憶
+        const savedData = localStorage.getItem('myVoicePreset2');
+        if (!savedData) {
+            alert('「お気に入り2」はまだ保存されていません。');
+            return;
+        }
+        const favData = JSON.parse(savedData);
+
+        // ★ voiceInput を speakerInput に修正
+        const speakerInput = document.getElementById('speakerInput');
+
+        if (speakerInput && favData.speaker) speakerInput.value = favData.speaker;
+        if (pitchInput && favData.pitch) { pitchInput.value = favData.pitch; pitchInput.dispatchEvent(new Event('input')); }
+        if (rateInput && favData.rate) { rateInput.value = favData.rate; rateInput.dispatchEvent(new Event('input')); }
+        if (volumeInput && favData.volume) { volumeInput.value = favData.volume; volumeInput.dispatchEvent(new Event('input')); }   
+        
+        alert('「お気に入り2」を呼び出しました!');
+    });
+
+}
+
+// 3. 共通の「今の設定を保存」ボタン（ボタンは1つで共通!）
+const btnSaveFav = document.getElementById('btnSaveFav');
+// console.log('ボタンの習得結果:', btnSaveFav); // ← ここを追加
+
+if (btnSaveFav) {
+    btnSaveFav.addEventListener('click', () => {
+        // console.log('保存ボタンがクリックされました!'); // ←ここを追加
+        const speakerInput = document.getElementById('speakerInput');
+        
+        const favData = {
+            speaker: speakerInput ? speakerInput.value : 3,
+            pitch: pitchInput ? pitchInput.value : 1,
+            rate: rateInput ? rateInput.value : 1,
+            volume: volumeInput ? volumeInput.value : 1,
+        };
+        // console.log('保存するデータ:', favData); // ←ここを追加
+
+        // 直前に選んでいた方（1か2）の枠に保存する
+        const keyName = `myVoicePreset${activeFavSlot}`;
+        localStorage.setItem(keyName, JSON.stringify(favData));
+
+        alert(`「お気に入り${activeFavSlot}」に現在の設定を保存しました!`);
+    });
+}
+
+    // 「音声をダウンロード」ボタンの処理
+    const btnDownload = document.getElementById('btnDowload');
+
+    if (btnDownload) {
+        btnDownload.addEventListener('click' , () => {
+            // テキスト入力エリアから文字列を習得（ID名は環境に合わせて調整してください）
+            // まだしゃべるボタンが押されておらず、音声データがない場合
+            if (!currentAudioBlob) {
+                alert('先に「しゃべる」ボタンを押して音声を生成してください。');
+                return;
+            }
+            const downloadUrl = URL.createObjectURL(currentAudioBlob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = `voicevox_audio_${Date.now()}.wav`; // 保存時のファイル名
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            // メモリ解放
+            URL.revokeObjectURL(downloadUrl);
+
+            
+        });
+    }
+
+    // 表示エリアを切り替える関数
+    function showHighlightArea(isPlay) {
+        const textInput = document.getElementById('textInput');
+        const highlightArea = document.getElementById('highlightArea');
+
+        if (isPlay) {
+            // 再生中：テキストエリアを隠して、ハイライトエリアを表示
+            textInput.classList.add('hidden');
+            highlightArea.classList.remove('hidden');
+        } else {
+            // 停止時：ハイライトエリアを隠して、テキストエリアを表示
+            highlightArea.classList.add('hidden');
+            textInput.classList.remove('hidden');
+        }
+    }
+
+    // ダークモード切り替え
+    darkToggle.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        darkToggle.innerHTML = isDark ? 'ダークモード<br>ON' : 'ダークモード<br>OFF';
+    });
+</script>
+</body>
+</html>
+

@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音声読み上げミニアプリ</title>
+    <!-- 👇　iPhoneのホーム画面用アイコンとアプリ化の設定　👇 -->
+     <link rel="apple-touch-icon" href="icon.jpg">
+     <meta name="apple-mobile-web-app-capable" content="yes">
+     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+     <meta name="apple-mobile-web-app-title" content="音声アプリ">
+     <!-- 👆　ここまで　👆 -->
+
+    <!-- 👇ここから追加します-->
+     <style>
+        /* 全体の背景と文字色 */
+        :root {
+            --background-color: #f4f4f4;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #0000d6;
+            --slider-bg: linear-gradient(to right, #2b00ff, #ff0000);
+            --badge-bg: #4a54ee;
+            --badge-red: #e60000;
+        }
+ 
+        /* ダークモード時の色設定 */
+        body.dark-mode {
+            --bg-color: #121212;
+            --card-bg: #000000;
+            --text-color: #ffffff;
+            --border-color: #2b00ff;
+        }
+
+        /* 画面全体を中央寄せにする */
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: "Segoe UI Emoji", "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* アプリの外枠カード */
+        .container {
+            position:relative;
+          background-color: var(--card-bg);
+          border: 3px solid #000;
+          border-radius: 12px;
+          padding: 24px;
+          width: 600px;
+          max-width: 90%;
+          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+          position: relative;
+        }
+
+        /* タイトルのスタイル */
+        h1 {
+            color: #ff0000;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        /* ダークモードボタン */
+        #darkToggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #000;
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        body.dark-mode #darkToggle {
+            background: #fff;
+            color: #000;
+        }
+        /* ダークモード時の読み上げ表示エリアの文字色調整 */
+        body.dark-mode #textInput,
+        body.dark-mode #highlightArea {
+            color: #333333 !important; /* 背景が白～薄い色でもはっきり見える暗い文字色 */
+        }
+
+        
+        body.dark-mode textarea#textInput::placeholder {
+            color: #888888 !important;
+        }
+
+        /* ダークモード時の文字数・予想時間表示欄の文字色を明るくする */
+        body.dark-mode #timeEstimate {
+            color: #cccccc !important; /* 明るいグレー（または #ffffff で純白）にする */
+        }
+        
+        /* テキスト入力エリア */
+        textarea{
+            width: 100%;
+            height: 150px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            box-sizing: border-box;
+            font-size: 16px;
+            resize: none;
+            margin-bottom: 20px;
+        }
+
+       /* 現在読み上げ中の文章スタイル */
+       .highlight-text {
+       background-color: #ffeb3b; /* 鮮やかな黄色 */
+       color: #000;
+       font-weight: bold;
+       padding: 2px 4px;
+       border-radius: 4px;
+       }
+
+        /* ボタンを横並びにするエリア */
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        /* 緑色の「しゃべる」「だまる」「クリア」ボタン */
+        .btn-group button {
+            flex: 1;
+            padding: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #004d1a;
+            background-color: #00ff66;
+        }
+
+        /* label-badge がボタンになっても見た目を維持する設定 */
+        button.label-badge {
+           border: none;
+           cursor: pointer;
+        }
+
+        /* スライダーの行スタイル */
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        /* スライダーの左右の四角いラベル */
+        .label-badge {
+            width: 60px;
+            padding: 6px;
+            text-align: center;
+            color: #fff;
+            font-weight: bold;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .badge-blue { background-color: var(--badge-bg);}
+        .badge-red { background-color: var(--badge-red);}
+
+        .slider-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+
+        /* 赤青グラデーションのバー */
+        input[type="range"] {
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 12px;
+      border-radius: 6px;
+      background: var(--slider-bg);
+      outline: none;
+    }
+        /* スライダーのつまみ（緑の丸） */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #00ff66;
+            cursor: pointer;
+            border: 2px solid #fff;
+        }
+ </style>
+</head>
+<body>
+<!-- ここから画面に表示されるパーツ -->
+ <div class="container">
+    <button id="darkToggle">ダークモード<br>OFF</button>
+
+    <h1>★音声読み上げミニアプリ★</h1>
+
+    <!-- テキスト入力欄 -->
+    <textarea id="textInput" placeholder="ここに読み上げた文章を入力してください..."></textarea>
+
+    <!-- 🔥　ここを追加！　読み上げハイライト表示エリア -->
+     <div id="highlightArea" style="margin-top: 10px; padding: 12px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; line-height: 1.6; min-height: 50px; text-align: left;">
+        ここに読み上げ中のハイライトが表示されます
+     </div>
+    
+    <!-- 💡　ここを追加！　時間と文字数の表示欄 -->
+     <div id="timeEstimate" style="margin: 10px 0; font-size: 0.95rem; color: #666;">
+        文字数: <span id="charCount">0</span> 文字 ／ 予想時間: 約 <span id="speakingTime">0</span> 秒
+     </div>
+
+    <!-- 操作ボタン -->
+    <div class="btn-group">
+        <button id="speakBtn">しゃべる</button>
+        <button id="pauseBtn">一時だまる</button>
+        <button id="stopBtn">だまる</button>
+        <button id="clearBtn">クリア</button>
+    </div>
+
+    <!-- 設定スライダー -->
+     <div class="control-row">
+        <div class="label-badge badge-blue">０</div>
+        <div class="slider-wrapper">
+            <input type="range" id="volume" min="0" max="1" step="0.1" value="1">
+        </div>
+        <div class="label-badge badge-red">１００</div>
+     </div>
+
+     <!-- 音声選択ドロップダウン -->
+      <div style="margin: 10px 0;">
+        <label for="voiceInput" style="font-weight: bold;">声の種類：</label>
+        <select id="voiceInput" style="padding: 5px; font-size: 16px; width: 100%; max-width: 300px;"></select>
+      </div>
+      <!-- プリセットボタン -->
+      <div class="control-row" style="margin: 15px 0; gap: 8px; justify-content: center;">
+        <button type="button" id="presetNews" class="btn">📰 ニュース風</button>
+        <button type="button" id="presetRobot" class="btn">🤖 ロボット風</button>
+        <button type="button" id="presetAnime" class="btn">✨ アニメ風</button>
+      </div>
+
+      <!-- ↓ ここから追加 ↓ -->
+      <div class="control-row" style="margin: 15px 0; gap: 8px; justify-content: center;">
+      <button id="btnFav1">★ お気に入り1</button>
+       <button id="btnFav2">★ お気に入り2</button>
+       <button id="btnSaveFav" style="background-color: #ff9800; color: white;">💾 今の設定を保存</button>
+       <button id="btnDowload" style="background-color: #2196F3; color: white; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer;">
+            🎵 音声をダウンロード
+       </button>
+      </div>
+      
+       <div class="control-row">
+        <button id="maleBtn" class="label-badge badge-blue">男性</button>
+        <div class="slider-wrapper">
+            <input type="range" id="voiceSelect" min="0" max="1" step="0.5" value="0">
+        </div>
+        <button id="femaleBtn" class="label-badge badge-red">女性</button>
+     </div>
+
+     <div class="control-row">
+        <div class="label-badge badge-blue">低音</div>
+        <div class="slider-wrapper">
+            <input type="range" id="pitch" min="0.5" max="1.5" step="0.1" value="1">
+        </div>
+        <div class="label-badge badge-red">高音</div>
+     </div>
+
+     <div class="control-row">
+        <div class="label-badge badge-blue">遅い</div>
+        <div class="slider-wrapper">
+            <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1">
+        </div>
+        <div class="label-badge badge-red">早い</div>
+     </div>
+ </div>
+
+ <script>
+    const synth = window.speechSynthesis;
+    let voices = [];
+
+    // エレメント取得
+    const textInput = document.getElementById('textInput');
+    const speakBtn = document.getElementById('speakBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const volumeInput = document.getElementById('volume');
+    const pitchInput = document.getElementById('pitch');
+    const rateInput = document.getElementById('rate');
+    const voiceInput = document.getElementById('voiceInput');
+    const darkToggle = document.getElementById('darkToggle');
+
+    // 💡 ここに追加！
+    const charCount = document.getElementById('charCount');
+    const speakingTime = document.getElementById('speakingTime');
+
+    // 文字数と予想時間を更新する関数
+    function updateEstimate() {
+        const text = textInput.value;
+        const length = text.length; // 文字数
+
+        // 速度スライダーの値を取得（標準は 1）
+        const rate = parseFloat(rateInput.value) || 1;
+
+        // 一般的な読み上げ速度（1秒あたり約6文字）÷ 速度倍率
+        const baseSpeed = 6;
+        const totalSeconds = Math.ceil(length / (baseSpeed * rate));
+
+        // 画面に反映
+        charCount.textContent = length;
+        speakingTime.textContent = totalSeconds;
+    }
+
+    // 入力したとき＆速度を変えたときに自動計算するイベントを設定
+    textInput.addEventListener('input', updateEstimate);
+    rateInput.addEventListener('input', updateEstimate);
+
+    // 音声の一覧取得
+    function loadVoices() {
+        voices = synth.getVoices().filter(v => v.lang.includes('ja') || v.lang.includes('JA'));
+    
+        // ドロップダウンの中身をセット
+        if (voiceInput) {
+            voiceInput.innerHTML = '';
+            voices.forEach((voice, index) => {
+                const option = document.createElement('option');
+                option.textContent = voice.name; // 「Microsoft Ayumi」などの名前が表示されます
+                option.value = index;
+                voiceInput.appendChild(option);
+            })
+        }
+    }
+    loadVoices();
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
+    // ドロップダウン（声の種類）を直接変更した時の処理
+    if (voiceInput) {
+        voiceInput.addEventListener('change', (e) => {
+            // 選択された声の名前を取得
+            const selectedOption = voiceInput.options[voiceInput.selectedIndex];
+            const selectedName = selectedOption ? selectedOption.text : '';
+
+            // Ichiro（男性）が含まれていれば 0（男性）、それ以外なら 1（女性）にする
+            if (voiceSelectSlider) {
+                if (selectedName.includes('Ichiro') || selectedName.includes('Male')) {
+                    voiceSelectSlider.value = 0; // 男性
+                } else {
+                    voiceSelectSlider.value = 1; // 女性
+                }
+                voiceSelectSlider.dispatchEvent(new Event('input'));  // 画面描画の更新
+            }
+        });
+    }
+
+
+    // 男性/女性ボタンで声とピッチ（高さ）を切り替える
+    const maleBtn = document.getElementById('maleBtn');
+    const femaleBtn = document.getElementById('femaleBtn');
+
+    if (maleBtn) {
+        maleBtn.addEventListener('click', () => {
+            // ピッチを低音（男性風）に設定
+            if (pitchInput) pitchInput.value = 0.8;
+
+            // ★追加：スライダーの🟢を男性（0）に移動する
+            if (voiceSelectSlider) {
+                voiceSelectSlider.value = 0;
+                voiceSelectSlider.dispatchEvent(new Event('input'));
+            }
+
+            // ドロップダウンから男性声（Ichiro等）を探して選択
+            const maleIndex = voices.findIndex(v => 
+            v.name.includes('Ichiro') || 
+            v.name.includes('Keita') ||
+            v.name.includes('Otoya') ||
+            v.name.includes('Hattori') ||
+            v.name.includes('Male')
+        );
+            if (maleIndex !== -1 && voiceInput) {
+                voiceInput.value = maleIndex;
+            }
+        });
+    }
+
+    if (femaleBtn) {
+        femaleBtn.addEventListener('click', () => {
+            // ピッチを高音（女性風）に設定
+            if (pitchInput) pitchInput.value = 1.2;
+
+            // ★追加：スライダーの🟢を女性（1）移動させる
+            if (voiceSelectSlider) {
+                voiceSelectSlider.value = 1;
+                voiceSelectSlider.dispatchEvent(new Event('input'));
+            }
+
+            // ドロップダウンから女性声（Haruka, Sayaka, Ayumi等）を探して選択
+            const femaleIndex = voices.findIndex(v => 
+                v.name.includes('Haruka') ||
+                v.name.includes('Sayaka') ||
+                v.name.includes('Ayumi') ||
+                v.name.includes('Kyoko') ||
+                v.name.includes('O-ren') ||
+                v.name.includes('Google') ||
+                v.name.includes('Female')
+            );
+            if (femaleIndex !== -1 && voiceInput) {
+                voiceInput.value = femaleIndex;
+            }
+        });
+    }
+    // しゃべる処理を関数化
+    function playText() {
+        if (synth.speaking) synth.cancel();
+
+        const text = textInput.value;
+        const higthlightArea = document.getElementById('highlightArea');
+
+        if (text !== '') {
+            // 「。！？\n」の直後で分割する（正規表現の肯定後比: (?<=[。！？\n]) を使用）
+            const combinedSentences = text.split(/(?<=[。！？\n])/).filter(s => s.trim() !== '');
+            
+
+            // 最初は全文章を通常表示
+            higthlightArea.innerHTML = combinedSentences.map((s, idx) => `<span id="sentence-${idx}">${s}</span>`).join('');
+
+            combinedSentences.forEach((sentence, index) => {
+                if (sentence.trim() === '') return;
+                // 語尾に「。」を補う（少しだけ間をあけるため）
+                const utterThis = new SpeechSynthesisUtterance(sentence);
+                utterThis.volume = volumeInput.value;
+                utterThis.pitch = pitchInput.value;
+                utterThis.rate = rateInput.value;
+
+                if (voices.length > 0) {
+                // 0なら1つ目（男性/標準）、1なら2つ目（女性/選択可能なら）
+                const voiceIndex = Math.min(voiceInput.value, voices.length - 1);
+                utterThis.voice = voices[voiceIndex];
+            }
+
+            // 🔥 再生開始（start）イベント：喋り始めた文をハイライト！
+            utterThis.onstart = () => {
+                // すべてのハイライトを一度削除
+                combinedSentences.forEach((_, idx) => {
+                  const el = document.getElementById(`sentence-${idx}`);
+                  if (el) el.classList.remove('highlight-text');
+                });
+
+                // 今喋っている文だけハイライトをつける
+                const currentEl = document.getElementById(`sentence-${index}`);
+                if (currentEl) currentEl.classList.add(`highlight-text`);
+            };
+
+            // 🔥 再生終了/キャンセル時：ハイライトを消す
+            utterThis.onend = () => {
+                const currentEl = document.getElementById(`sentence-${index}`);
+                if (currentEl) currentEl.classList.remove(`highlight-text`);
+            };
+
+                            
+            // キュー（順番待ち）に追加して順次喋らせる
+            synth.speak(utterThis);
+
+            }); 
+          }  
+        }
+    
+
+    // しゃべるボタン
+    speakBtn.addEventListener('click', playText);
+
+    // 一時だまる / 再開の切り替え処理
+    pauseBtn.addEventListener('click', () => {
+        // 現在選ばれている声の名前を取得
+        const voiceIndex = parseInt(voiceInput.value, 10);
+        const selectedVoiceName = voices[voiceIndex] ? voices[voiceIndex].name : '';
+        const isGoogleVoice = selectedVoiceName.includes('Google');
+
+        // ボタンの文字が「再開」かどうかで判定する（Google音声は状態取得がバグりやすいため）
+        const isResuming = (pauseBtn.textContent === '再開');
+
+        if (isResuming) {
+            // --- 【再開するとき】 ---
+            if (isGoogleVoice) {
+                // Google音声はリセットして最初から読み直す
+                synth.cancel();
+                setTimeout(() => {
+                    playText();
+                }, 250);
+            } else {
+                // 通常音声はそのまま再開
+                synth.resume();
+            }
+            pauseBtn.textContent = '一時だまる';
+        } else {
+            // --- 【一時停止するとき】 ---
+            if (!synth.speaking) return; // そもそも喋っていなければ何もしない
+            
+            synth.pause(); // 一時停止
+            pauseBtn.textContent = '再開';
+        }
+    });
+
+    // 「だまる」や「クリア」を押したときはボタン表示を「一時だまる」に戻しておく
+    stopBtn.addEventListener('click', () => {
+        synth.cancel();
+        pauseBtn.textContent = '一時だまる';
+    });
+
+    // だまる（停止）
+    stopBtn.addEventListener('click', () => {
+        synth.cancel();
+    });
+
+    // クリア
+    clearBtn.addEventListener('click', () => {
+        textInput.value = '';
+        synth.cancel();
+    });
+
+    // プリセットボタンの取得
+        const presetNews = document.getElementById('presetNews');
+        const presetRobot = document.getElementById('presetRobot');
+        const presetAnime = document.getElementById('presetAnime');
+
+    // スライダーの取得（現在のHTMLのidに合わせています） 
+        const voiceSelectSlider = document.getElementById('voiceSelect'); // 0:男性 / 1:女性
+
+    // 1. 📰 ニュース風（標準ピッチ）
+        presetNews.addEventListener('click', () => {
+          
+            if (voiceSelectSlider) {
+              voiceSelectSlider.value = 0.5;  // 真ん中
+              voiceSelectSlider.dispatchEvent(new Event('input'));
+            }
+           if (pitchInput) {
+                pitchInput.value = 1.0;
+                pitchInput.dispatchEvent(new Event('input'));
+            }
+        });
+
+    // 2. 🤖 ロボット風（かなり低音）
+        presetRobot.addEventListener('click', () => {
+            if (voiceSelectSlider) {
+              voiceSelectSlider.value = 0.5;  // 真ん中
+              voiceSelectSlider.dispatchEvent(new Event('input'));
+            }
+            if (pitchInput) {
+                pitchInput.value = 0.5;  // かなり低音
+                pitchInput.dispatchEvent(new Event('input'));
+            }
+        });
+
+    // 3. ✨ アニメ風（高温）
+        presetAnime.addEventListener('click', () => {
+            if (voiceSelectSlider) {
+                voiceSelectSlider.value = 0.5;  // 真ん中
+                voiceSelectSlider.dispatchEvent(new Event('input'));
+            }
+            if (pitchInput) {
+                pitchInput.value = 1.4;  // 高音
+                pitchInput.dispatchEvent(new Event('input'));
+            }
+        });
+    
+    // 現在選択されているお気に入り番号（初期値は1）
+    let activeFavSlot = 1;
+
+    // 1. 「お気に入り1」ボタンを押したとき
+    const btnFav1 = document.getElementById('btnFav1');
+    if (btnFav1) {
+        btnFav1.addEventListener('click', () => {
+           activeFavSlot = 1; // 1を選んだと記憶
+           const savedData = localStorage.getItem('myVoicePreset1');
+           if (!savedData) {
+            alert('「お気に入り1」はまだ保存されていません。');
+            return;
+           }
+           const favData = JSON.parse(savedData);
+
+           if (voiceInput) voiceInput.selectedIndex = favData.voiceIndex;
+           if (pitchInput) { pitchInput.value = favData.pitch; pitchInput.dispatchEvent(new Event('input'));}
+           if (rateInput) { rateInput.value = favData.rate; rateInput.dispatchEvent(new Event('input'));}
+           if (volumeInput) { volumeInput.value = favData.volume; voiceInput.dispatchEvent(new Event('input'));}
+           if (voiceSelectSlider) { voiceSelectSlider.value = favData.gender; voiceSelectSlider.dispatchEvent(new Event('input'));}
+
+           alert('「お気に入り1」を呼び出しました!');
+    });
+}
+
+// 2. 「お気に入り2」ボタンを押したとき
+const btnFav2 = document.getElementById('btnFav2');
+if (btnFav2) {
+    btnFav2.addEventListener('click', () => {
+        activeFavSlot = 2; // 2を選んだと記憶
+        const savedData = localStorage.getItem('myVoicePreset2');
+        if (!savedData) {
+            alert('「お気に入り2」はまだ保存されていません。');
+            return;
+        }
+        const favData = JSON.parse(savedData);
+
+        if (voiceInput) voiceInput.selectedIndex = favData.voiceIndex;
+        if (pitchInput) { pitchInput.value = favData.pitch; pitchInput.dispatchEvent(new Event('input')); }
+        if (rateInput) { rateInput.value = favData.rate; rateInput.dispatchEvent(new Event('input')); }
+        if (volumeInput) { volumeInput.value = favData.volume; volumeInput.dispatchEvent(new Event('input')); }
+        if (voiceSelectSlider) { voiceSelectSlider.value = favData.gender; voiceSelectSlider.dispatchEvent(new Event('input')); }   
+        
+        alert('「お気に入り2」を呼び出しました!');
+    });
+
+}
+
+// 3. 共通の「今の設定を保存」ボタン（ボタンは1つで共通!）
+const btnSaveFav = document.getElementById('btnSaveFav');
+// console.log('ボタンの習得結果:', btnSaveFav); // ← ここを追加
+
+if (btnSaveFav) {
+    btnSaveFav.addEventListener('click', () => {
+        // console.log('保存ボタンがクリックされました!'); // ←ここを追加
+        
+        const favData = {
+            voiceIndex: voiceInput ? voiceInput.selectedIndex : 0,
+            pitch: pitchInput ? pitchInput.value : 1,
+            rate: rateInput ? rateInput.value : 1,
+            volume: volumeInput ? volumeInput.value : 1,
+            gender: voiceSelectSlider ? voiceSelectSlider.value : 0
+        };
+        // console.log('保存するデータ:', favData); // ←ここを追加
+
+        // 直前に選んでいた方（1か2）の枠に保存する
+        const keyName = `myVoicePreset${activeFavSlot}`;
+        localStorage.setItem(keyName, JSON.stringify(favData));
+
+        alert(`「お気に入り${activeFavSlot}」に現在の設定を保存しました!`);
+    });
+}
+
+    // 「音声をダウンロード」ボタンの処理
+    const btnDownload = document.getElementById('btnDowload');
+
+    if (btnDownload) {
+        btnDownload.addEventListener('click' , async () => {
+            // テキスト入力エリアから文字列を習得（ID名は環境に合わせて調整してください）
+            const textInput = document.getElementById('textInput');
+            const text = textInput ? textInput.value : '';
+            
+            if (!text) {
+                alert('ダウンロードする文章を入力してください。');
+                return;
+            }
+
+            // Web Audio API で音声出力ストリームを作成
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const dest = audioCtx.createMediaStreamDestination();
+            const mediaRecorder = new MediaRecorder(dest.stream);
+            const chunks = [];
+
+            mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+            mediaRecorder.onstop = () => {
+                // 録音データから音声ファイルを作成（WAV形式）
+                const blob = new Blob(chunks, { type: 'audio/wav' });
+                const url = URL.createObjectURL(blob);
+
+                // 自動的にダウンロードを実行
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `speech_${Date.now()}.wav`;
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+                // 録音開始
+                mediaRecorder.start();
+
+                // 読み上げ設定
+                const uttr = new SpeechSynthesisUtterance(text);
+
+                // 音声・ピッチ・スピード等設定反映（※変数は既存のコードに合わせて習得）
+                const voiceSelect = document.getElementById('voiceSelect');
+                if (voiceSelect && window.speechSynthesis.getVoices().length > 0) {
+                    uttr.voice = window.speechSynthesis.getVoices()[voiceSelect.selectedIndex];
+                }
+
+                const pitchInput = document.getElementById('pitch'); // ピッチ用スライダー
+                const rateInput = document.getElementById('rate');   // スピード用スライダー
+                if (pitchInput) uttr.pitch = parseFloat(pitchInput.value);
+                if (rateInput) uttr.rate = parseFloat(rateInput.value);
+
+                // 読み上げ終了時に録音を止める
+                uttr.onend = () => {
+                    mediaRecorder.stop();
+                };
+
+                // 読み上げ実行
+                window.speechSynthesis.speak(uttr);
+        });
+    }
+
+    // ダークモード切り替え
+    darkToggle.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        darkToggle.innerHTML = isDark ? 'ダークモード<br>ON' : 'ダークモード<br>OFF';
+    });
+</script>
+</body>
+</html>
+
