@@ -14,30 +14,30 @@
 - **音声ファイルのダウンロード**: 作成した音声を `.wav` 形式でダウンロード保存できます。
 - **スマホ対応**: iPhoneのホーム画面に追加（ウェブクリップ機能）して、専用アプリのように全画面で使うことができます。
 
-## 📁 ファイル構成
+## 📁 ファイル（フォルダ）構成
 
-- `index.html`: 標準の Web Speech API を使用した基本のPC向けバージョン。
-- `index_voicevox.html`: [VOICEVOX](https://voicevox.hiroshiba.jp/) と連携し、ずんだもん等のキャラクター音声で読み上げ・ダウンロードができるバージョン。
-- `index_mobile.html`: スマートフォン（iOS/Safariなど）での利用を想定したモバイル向けバージョン。
-- `icon.jpg`: iPhoneのホーム画面に追加した際に表示されるアイコン画像。
+- `original/index.html`: 標準の Web Speech API を使用した基本のPC向けバージョン。
+- `voicevox/index.html`: [VOICEVOX](https://voicevox.hiroshiba.jp/) と連携し、ずんだもん等のキャラクター音声で読み上げ・ダウンロードができるバージョン。
+- `mobile/index.html`: スマートフォン（iOS/Safariなど）での利用を想定したモバイル向けバージョン。
+- `icon.jpg`: iPhoneのホーム画面に追加した際に表示されるアイコン画像（各フォルダで利用）。
 
 ## 🚀 使い方
 
-### 基本版 (`index.html` / `index_mobile.html`)
+### 基本版 (`original/index.html` / `mobile/index.html`)
 1. ファイルをブラウザで開きます。
 2. テキストボックスに読ませたい文章を入力します。
 3. 「しゃべる」ボタンを押すと読み上げが開始されます。
 
-### VOICEVOX連携版 (`index_voicevox.html`)
+### VOICEVOX連携版 (`voicevox/index.html`)
 1. お使いのPCで [VOICEVOX](https://voicevox.hiroshiba.jp/) アプリを起動しておきます。
-2. `index_voicevox.html` をブラウザで開きます。
+2. `voicevox/index.html` をブラウザで開きます。
 3. テキストを入力し、キャラクターを選んで「しゃべる」を押すと、VOICEVOXの音声で合成・再生されます。
 4. 「音声をダウンロード」を押すと、作成した音声が `.wav` ファイルとして保存されます。
 
 ## ⚠️ 動作環境と仕様（制限事項）
 
 - **iOS/Safariの仕様について**: iPhone等のSafariではAppleの仕様上、ブラウザから呼び出せる音声がシステム標準の1種類（Kyokoなど）に制限されます。設定から拡張ボイスをダウンロードしても、ブラウザ版アプリには反映されない点にご注意ください。
-- **VOICEVOX連携について**: `index_voicevox.html` を動作させるには、ローカルホスト（`http://localhost:50021`）でVOICEVOXのエンジンが起動している必要があります。
+- **VOICEVOX連携について**: `voicevox/index.html` を動作させるには、ローカルホスト（`http://localhost:50021`）でVOICEVOXのエンジンが起動している必要があります。
 
 ## 🌱 お知らせ
 本アプリはプログラミングの実践練習を兼ねて開発中です。
