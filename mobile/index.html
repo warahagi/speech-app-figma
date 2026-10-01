@@ -245,12 +245,12 @@
 
       <!-- ↓ ここから追加 ↓ -->
       <div class="control-row" style="margin: 15px 0; gap: 8px; justify-content: center;">
-      <button id="btnFav1">★ お気に入り1</button>
-       <button id="btnFav2">★ お気に入り2</button>
-       <button id="btnSaveFav" style="background-color: #ff9800; color: white;">💾 今の設定を保存</button>
-       <button id="btnDowload" style="background-color: #2196F3; color: white; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer;">
-            🎵 音声をダウンロード
-       </button>
+      <button id="btnFav1">★ お気に入り1 を再生</button>
+      <button id="btnSaveFav1" style="background-color: #ff9800; color: white;">💾 1に保存</button>
+      <span style="margin: 0 4px;">|</span>
+      <button id="btnFav2">★ お気に入り2 を再生</button>
+      <button id="btnSaveFav2" style="background-color: #ff9800; color: white;">💾 2に保存</button>
+
       </div>
       
        <div class="control-row">
@@ -481,184 +481,44 @@
         synth.cancel();
     });
 
-    // プリセットボタンの取得
-        const presetNews = document.getElementById('presetNews');
-        const presetRobot = document.getElementById('presetRobot');
-        const presetAnime = document.getElementById('presetAnime');
-
-    /* スライダーの取得（現在のHTMLのidに合わせています） 
-        const voiceSelectSlider = document.getElementById('voiceSelect'); // 0:男性 / 1:女性
-
-    // 1. 📰 ニュース風（標準ピッチ）
-        presetNews.addEventListener('click', () => {
-          
-            if (voiceSelectSlider) {
-              voiceSelectSlider.value = 0.5;  // 真ん中
-              voiceSelectSlider.dispatchEvent(new Event('input'));
-            }
-           if (pitchInput) {
-                pitchInput.value = 1.0;
-                pitchInput.dispatchEvent(new Event('input'));
-            }
-        });
-
-    // 2. 🤖 ロボット風（かなり低音）
-        presetRobot.addEventListener('click', () => {
-            if (voiceSelectSlider) {
-              voiceSelectSlider.value = 0.5;  // 真ん中
-              voiceSelectSlider.dispatchEvent(new Event('input'));
-            }
-            if (pitchInput) {
-                pitchInput.value = 0.5;  // かなり低音
-                pitchInput.dispatchEvent(new Event('input'));
-            }
-        });
-
-    // 3. ✨ アニメ風（高温）
-        presetAnime.addEventListener('click', () => {
-            if (voiceSelectSlider) {
-                voiceSelectSlider.value = 0.5;  // 真ん中
-                voiceSelectSlider.dispatchEvent(new Event('input'));
-            }
-            if (pitchInput) {
-                pitchInput.value = 1.4;  // 高音
-                pitchInput.dispatchEvent(new Event('input'));
-            }
-        }); */
-    
-    // 現在選択されているお気に入り番号（初期値は1）
-    let activeFavSlot = 1;
-
-    // 1. 「お気に入り1」ボタンを押したとき
-    const btnFav1 = document.getElementById('btnFav1');
-    if (btnFav1) {
-        btnFav1.addEventListener('click', () => {
-           activeFavSlot = 1; // 1を選んだと記憶
-           const savedData = localStorage.getItem('myVoicePreset1');
-           if (!savedData) {
-            alert('「お気に入り1」はまだ保存されていません。');
-            return;
-           }
-           const favData = JSON.parse(savedData);
-
-           if (voiceInput) voiceInput.selectedIndex = favData.voiceIndex;
-           if (pitchInput) { pitchInput.value = favData.pitch; pitchInput.dispatchEvent(new Event('input'));}
-           if (rateInput) { rateInput.value = favData.rate; rateInput.dispatchEvent(new Event('input'));}
-           if (volumeInput) { volumeInput.value = favData.volume; voiceInput.dispatchEvent(new Event('input'));}
-           if (voiceSelectSlider) { voiceSelectSlider.value = favData.gender; voiceSelectSlider.dispatchEvent(new Event('input'));}
-
-           alert('「お気に入り1」を呼び出しました!');
-    });
-}
-
-// 2. 「お気に入り2」ボタンを押したとき
-const btnFav2 = document.getElementById('btnFav2');
-if (btnFav2) {
-    btnFav2.addEventListener('click', () => {
-        activeFavSlot = 2; // 2を選んだと記憶
-        const savedData = localStorage.getItem('myVoicePreset2');
-        if (!savedData) {
-            alert('「お気に入り2」はまだ保存されていません。');
-            return;
-        }
-        const favData = JSON.parse(savedData);
-
-        if (voiceInput) voiceInput.selectedIndex = favData.voiceIndex;
-        if (pitchInput) { pitchInput.value = favData.pitch; pitchInput.dispatchEvent(new Event('input')); }
-        if (rateInput) { rateInput.value = favData.rate; rateInput.dispatchEvent(new Event('input')); }
-        if (volumeInput) { volumeInput.value = favData.volume; volumeInput.dispatchEvent(new Event('input')); }
-        if (voiceSelectSlider) { voiceSelectSlider.value = favData.gender; voiceSelectSlider.dispatchEvent(new Event('input')); }   
+    // 3. 「1に保存」ボタンを押したとき
+    const btnSaveFav1 = document.getElementById('btnSaveFav1');
+    if (btnSaveFav1) {
+        btnSaveFav1.addEventListener('click', () => {
+            const textInput = document.getElementById('textInput');
+            const favData = {
+                text: textInput ? textInput.value : '',
+                voiceIndex: voiceInput ? voiceInput.selectedIndex : 0,
+                pitch: pitchInput ? pitchInput.value : 1,
+                rate: rateInput ? rateInput.value : 1,
+                volume: volumeInput ? volumeInput.value : 1,
+                gender: voiceSelectSlider ? voiceSelectSlider.value : 0
+            };
         
-        alert('「お気に入り2」を呼び出しました!');
-    });
+        localStorage.getItem('myVoicePreset1', JSON.stringify(favData));
+        alert('「お気に入り1」に現在の設定とテキストを保存しました。！');
+        });
+    }
 
-}
-
-// 3. 共通の「今の設定を保存」ボタン（ボタンは1つで共通!）
-const btnSaveFav = document.getElementById('btnSaveFav');
-// console.log('ボタンの習得結果:', btnSaveFav); // ← ここを追加
-
-if (btnSaveFav) {
-    btnSaveFav.addEventListener('click', () => {
-        // console.log('保存ボタンがクリックされました!'); // ←ここを追加
-        
-        const favData = {
+    // 4. 「2に保存」ボタンを押したとき
+    const btnSaveFav2 = document.getElementById('btnSaveFav2');
+    if (btnSaveFav2) {
+        btnSaveFav2.addEventListener('click', () => {
+           const textIpnt = document.getElementById('textInput');
+           const favData = {
+            text: textInput ? textInput.value : '',
             voiceIndex: voiceInput ? voiceInput.selectedIndex : 0,
             pitch: pitchInput ? pitchInput.value : 1,
             rate: rateInput ? rateInput.value : 1,
             volume: volumeInput ? volumeInput.value : 1,
             gender: voiceSelectSlider ? voiceSelectSlider.value : 0
-        };
-        // console.log('保存するデータ:', favData); // ←ここを追加
-
-        // 直前に選んでいた方（1か2）の枠に保存する
-        const keyName = `myVoicePreset${activeFavSlot}`;
-        localStorage.setItem(keyName, JSON.stringify(favData));
-
-        alert(`「お気に入り${activeFavSlot}」に現在の設定を保存しました!`);
-    });
-}
-
-    // 「音声をダウンロード」ボタンの処理
-    const btnDownload = document.getElementById('btnDowload');
-
-    if (btnDownload) {
-        btnDownload.addEventListener('click' , async () => {
-            // テキスト入力エリアから文字列を習得（ID名は環境に合わせて調整してください）
-            const textInput = document.getElementById('textInput');
-            const text = textInput ? textInput.value : '';
-            
-            if (!text) {
-                alert('ダウンロードする文章を入力してください。');
-                return;
-            }
-
-            // Web Audio API で音声出力ストリームを作成
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const dest = audioCtx.createMediaStreamDestination();
-            const mediaRecorder = new MediaRecorder(dest.stream);
-            const chunks = [];
-
-            mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-            mediaRecorder.onstop = () => {
-                // 録音データから音声ファイルを作成（WAV形式）
-                const blob = new Blob(chunks, { type: 'audio/wav' });
-                const url = URL.createObjectURL(blob);
-
-                // 自動的にダウンロードを実行
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `speech_${Date.now()}.wav`;
-                a.click();
-                URL.revokeObjectURL(url);
-            };
-
-                // 録音開始
-                mediaRecorder.start();
-
-                // 読み上げ設定
-                const uttr = new SpeechSynthesisUtterance(text);
-
-                // 音声・ピッチ・スピード等設定反映（※変数は既存のコードに合わせて習得）
-                const voiceSelect = document.getElementById('voiceSelect');
-                if (voiceSelect && window.speechSynthesis.getVoices().length > 0) {
-                    uttr.voice = window.speechSynthesis.getVoices()[voiceSelect.selectedIndex];
-                }
-
-                const pitchInput = document.getElementById('pitch'); // ピッチ用スライダー
-                const rateInput = document.getElementById('rate');   // スピード用スライダー
-                if (pitchInput) uttr.pitch = parseFloat(pitchInput.value);
-                if (rateInput) uttr.rate = parseFloat(rateInput.value);
-
-                // 読み上げ終了時に録音を止める
-                uttr.onend = () => {
-                    mediaRecorder.stop();
-                };
-
-                // 読み上げ実行
-                window.speechSynthesis.speak(uttr);
-        });
+           };
+        
+        localStorage.getItem('myVoicePreset2', JSON.stringify(favData));
+        alert('「お気に入り2」に現在の設定とテキストを保存しました！');
+      });
     }
+
 
     // ダークモード切り替え
     darkToggle.addEventListener('click', () => {
