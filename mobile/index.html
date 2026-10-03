@@ -523,7 +523,7 @@
     const btnFav1 = document.getElementById('btnFav1');
     if (btnFav1) {
         btnFav1.addEventListener('click', () => {
-            const savedData = JSON.parse(localStorage.getItem('myVoicePreset1'));
+            const savedData = localStorage.getItem('myVoicePreset1');
             if (!savedData) {
                 alert('「お気に入り1」のデータが保存されていません。');
                 return;
@@ -546,7 +546,7 @@
     const btnFav2 = document.getElementById('btnFav2');
     if (btnFav2) {
         btnFav2.addEventListener('click', () => {
-            const savedData = localStorage.getItem('myVoicePrestet2');
+            const savedData = localStorage.getItem('myVoicePreset2');
             if (!savedData) {
                 alert('「お気に入り2」はまだ保存されていません。');
                 return;
