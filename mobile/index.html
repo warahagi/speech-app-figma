@@ -492,10 +492,10 @@
                 pitch: pitchInput ? pitchInput.value : 1,
                 rate: rateInput ? rateInput.value : 1,
                 volume: volumeInput ? volumeInput.value : 1,
-                gender: voiceSelectSlider ? voiceSelectSlider.value : 0
+                inflection: document.getElementById('inflection') ? document.getElementById('inflection').value : 1
             };
         
-        localStorage.getItem('myVoicePreset1', JSON.stringify(favData));
+        localStorage.setItem('myVoicePreset1', JSON.stringify(favData));
         alert('「お気に入り1」に現在の設定とテキストを保存しました。！');
         });
     }
@@ -504,21 +504,65 @@
     const btnSaveFav2 = document.getElementById('btnSaveFav2');
     if (btnSaveFav2) {
         btnSaveFav2.addEventListener('click', () => {
-           const textIpnt = document.getElementById('textInput');
+           const textInput = document.getElementById('textInput');
            const favData = {
             text: textInput ? textInput.value : '',
             voiceIndex: voiceInput ? voiceInput.selectedIndex : 0,
             pitch: pitchInput ? pitchInput.value : 1,
             rate: rateInput ? rateInput.value : 1,
             volume: volumeInput ? volumeInput.value : 1,
-            gender: voiceSelectSlider ? voiceSelectSlider.value : 0
+            inflection: document.getElementById('inflection') ? document.getElementById('inflection').value : 1
            };
         
-        localStorage.getItem('myVoicePreset2', JSON.stringify(favData));
+        localStorage.setItem('myVoicePreset2', JSON.stringify(favData));
         alert('「お気に入り2」に現在の設定とテキストを保存しました！');
       });
     }
 
+    // 1. 「お気に入り1 を再生」ボタンを押したとき
+    const btnFav1 = document.getElementById('btnFav1');
+    if (btnFav1) {
+        btnFav1.addEventListener('click', () => {
+            const savedData = JSON.parse(localStorage.getItem('myVoicePreset1'));
+            if (!savedData) {
+                alert('「お気に入り1」のデータが保存されていません。');
+                return;
+            }
+            const favData = JSON.parse(savedData);
+
+            // 保存したデータを画面にセットする
+            if (textInput && favData.text) textInput.value = favData.text;
+            if (voiceInput && favData.voiceIndex !== undefined) voiceInput.selectedIndex = favData.voiceIndex;
+            if (pitchInput && favData.pitch) { pitchInput.value = favData.pitch; pitchInput.dispatchEvent(new Event('input')); }
+            if (rateInput && favData.rate) { rateInput.value = favData.rate; rateInput.dispatchEvent(new Event('input')); }
+            if (volumeInput && favData.volume) { volumeInput.value = favData.volume; volumeInput.dispatchEvent(new Event('input')); }
+            
+            // セットが終わったら再生スタート！
+            playText();
+        });
+    }
+
+    // 2. 「お気に入り2 を再生」ボタンを押したとき
+    const btnFav2 = document.getElementById('btnFav2');
+    if (btnFav2) {
+        btnFav2.addEventListener('click', () => {
+            const savedData = localStorage.getItem('myVoicePrestet2');
+            if (!savedData) {
+                alert('「お気に入り2」はまだ保存されていません。');
+                return;
+            }
+            const favData = JSON.parse(savedData);
+
+            if (textInput && favData.text) textInput.value = favData.text;
+            if (voiceInput && favData.voiceIndex !== undefined) voiceInput.selectedIndex = favData.voiceIndex;
+            if (pitchInput && favData.pitch) { pitchInput.value = favData.pitch; pitchInput.dispatchEvent(new Event('input')); }
+            if (rateInput && favData.rate) { rateInput.value = favData.rate; rateInput.dispatchEvent(new Event('input')); }
+            if (volumeInput && favData.volume) { volumeInput.value = favData.volume; volumeInput.dispatchEvent(new Event('input')); }
+            
+            playText();
+
+        });
+    }
 
     // ダークモード切り替え
     darkToggle.addEventListener('click', () => {
